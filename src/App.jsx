@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Analytics } from "@vercel/analytics/next";
 
 // 🔑 IMPORTANT: PASTE YOUR GOOGLE GEMINI API KEY BELOW
 
