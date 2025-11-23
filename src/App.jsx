@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Daily Goal Tracker - Compact Column Version
 // 🔑 IMPORTANT: PASTE YOUR GOOGLE GEMINI API KEY BELOW
 
 const apiKey = import.meta.env.VITE_API_KEY; 
@@ -389,8 +388,12 @@ export default function DailyGoalTracker() {
         
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
           <div>
+            {/* 🛠️ FIX: Using "block" for mobile (new line) and "md:inline" for desktop (beside) */}
             <h1 className="text-2xl md:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
-              Daily Goal Tracker
+              GOAL LEDGER 
+              <span className="block md:inline md:ml-2 text-lg md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
+                - A Daily Goal Tracker
+              </span>
             </h1>
             <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">Your personal AI-powered growth companion.</div>
           </div>
@@ -487,7 +490,6 @@ export default function DailyGoalTracker() {
               <tr>
                 <th className="hidden md:table-cell p-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-r border-gray-100 dark:border-slate-700 sticky left-0 bg-gray-50 dark:bg-slate-900 z-30 w-16 min-w-[4rem] shadow-sm">#</th>
                 
-                {/* 🛠️ FIX 1: Compact Width (reduced from 180px to 110px) */}
                 <th className="p-2 md:p-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-r border-gray-100 dark:border-slate-700 sticky left-0 md:left-16 bg-gray-50 dark:bg-slate-900 z-30 min-w-[120px] md:min-w-[110px] shadow-sm">ACTIVITY</th>
                 
                 {shownDays.map(d => {
@@ -519,7 +521,7 @@ export default function DailyGoalTracker() {
                 })}
 
                 <th className="p-2 md:p-4 text-center text-xs font-extrabold text-gray-500 uppercase tracking-wider border-b border-l border-gray-100 dark:border-slate-700 min-w-[100px] md:min-w-[150px] sticky right-0 z-30 bg-gray-50 dark:bg-slate-900 shadow-sm">
-                  PROGRESS %
+                  %
                 </th>
               </tr>
             </thead>
@@ -538,10 +540,8 @@ export default function DailyGoalTracker() {
                     <td className="p-2 md:p-4 border-b border-r border-gray-100 dark:border-slate-700 sticky left-0 md:left-16 z-20 shadow-sm transition-colors align-top bg-gray-50 dark:bg-slate-900 group-hover:bg-gray-100 dark:group-hover:bg-black">
                       <div className="font-bold text-gray-800 dark:text-gray-100 text-sm md:text-lg break-words max-w-[110px] md:max-w-none">{a.name}</div>
                       
-                      {/* 🛠️ FIX 2: Vertical Stack (flex-col) for Badges & Button */}
                       <div className="flex flex-col items-start gap-1 mt-1 md:mt-2">
                         
-                        {/* Row for Streaks */}
                         <div className="flex items-center gap-1">
                           <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 font-medium flex items-center gap-1">
                             🔥 {current}
@@ -551,7 +551,6 @@ export default function DailyGoalTracker() {
                           </div>
                         </div>
 
-                        {/* Button Row (Stacked Below) */}
                         <button onClick={() => removeActivity(a.id)} className="text-[10px] md:text-xs text-gray-400 hover:text-rose-500 transition-colors px-1 mt-0.5">Delete</button>
                       </div>
                     </td>
