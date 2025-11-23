@@ -591,6 +591,16 @@ export default function DailyGoalTracker() {
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {/* --- PREMIUM FOOTER (Placed after AnimatePresence to be pushed down) --- */}
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-slate-700 text-center">
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Developed by <span className="text-indigo-600 dark:text-indigo-400">PRABHU SINGH</span>
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                &copy; {new Date().getFullYear()} GOAL LEDGER. All rights reserved.
+            </div>
+        </div>
 
         {lastRemoved && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="fixed bottom-4 right-4 md:bottom-8 md:right-8 bg-gray-900 text-white px-4 py-3 md:px-6 md:py-3 rounded-xl shadow-2xl flex items-center gap-4 z-50 text-sm md:text-base max-w-[90vw]">
