@@ -1,33 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// import { Analytics } from "@vercel/analytics/next"
-
-// 🔑 IMPORTANT: PASTE YOUR GOOGLE GEMINI API KEY BELOW
-
-const apiKey = import.meta.env.VITE_API_KEY; 
-
-// Helper: Call Gemini API
-async function callGemini(prompt, systemInstruction = "You are a helpful assistant.") {
-  if (!apiKey) {
-    alert("Please add your Gemini API Key in the code (src/App.jsx) to use AI features.");
-    return "";
-  }
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-  const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemInstruction }] } };
-  let delay = 1000;
-  for (let i = 0; i < 5; i++) {
-    try {
-      const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    } catch (e) {
-      if (i === 4) throw e;
-      await new Promise(r => setTimeout(r, delay));
-      delay *= 2;
-    }
-  }
-}
 
 // --- STORAGE HELPERS ---
 const getStorageKey = (type, year, month) => {
@@ -67,8 +39,6 @@ export default function DailyGoalTracker() {
 
   const [newActivityName, setNewActivityName] = useState('');
   const [lastRemoved, setLastRemoved] = useState(null);
-  const [insight, setInsight] = useState(null);
-  const [loadingInsight, setLoadingInsight] = useState(false);
 
   // span inputs
   const [pendingFrom, setPendingFrom] = useState('1');
@@ -91,6 +61,15 @@ export default function DailyGoalTracker() {
 
   // --- EFFECTS ---
 
+  // Favicon Injection
+  useEffect(() => {
+    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/svg+xml';
+    link.rel = 'icon';
+    link.href = '/favicon.svg';
+    document.getElementsByTagName('head')[0].appendChild(link);
+  }, []);
+
   useEffect(() => {
     try { localStorage.setItem('dg-dark-mode', darkMode ? '1' : '0'); } catch (e) {}
     if (typeof document !== 'undefined') {
@@ -108,7 +87,7 @@ export default function DailyGoalTracker() {
 
     const mt = daysInMonth(year, month);
     setDayFrom(1); setDayTo(mt); setPendingFrom('1'); setPendingTo(String(mt));
-    setSelectedDay(null); setInsight(null);
+    setSelectedDay(null); 
 
     setActivities(loadInitialActivities(year, month));
     setEvents(loadInitialEvents(year, month));
@@ -344,44 +323,6 @@ export default function DailyGoalTracker() {
     reader.readAsText(file);
   }
 
-  async function generateInsights() {
-    setLoadingInsight(true);
-    setInsight(null);
-    try {
-      const summary = activities.map(a => {
-        const streak = getCurrentStreak(a);
-        const { percent } = getEfficiencyData(a);
-        return `${a.name}: ${percent}% completed, current streak ${streak} days.`;
-      }).join('\n');
-
-      const futureEvents = Object.entries(events)
-        .filter(([k]) => {
-          const d = new Date(k);
-          return d >= new Date() && d.getMonth() === month;
-        })
-        .map(([k, evs]) => `${k}: ${evs.map(e => e.title).join(', ')}`)
-        .join('\n');
-
-      const prompt = `
-        You are a motivational coach. Analyze this monthly habit data:
-        ${summary}
-        Upcoming events:
-        ${futureEvents || "None"}
-        Provide 3 short, punchy, encouraging sentences suitable for a dashboard. 
-        Focus on praising consistency or encouraging improvement. Mention specific upcoming events if any.
-        Do not use markdown formatting like bold/italic, just plain text.
-      `;
-
-      const result = await callGemini(prompt);
-      setInsight(result || "Keep going — small wins add up!");
-    } catch (err) {
-      console.error(err);
-      setInsight("Could not connect to AI coach right now. Keep going!");
-    } finally {
-      setLoadingInsight(false);
-    }
-  }
-
   return (
     <div className={`relative w-full min-h-screen p-2 md:p-8 transition-colors duration-500 ${darkMode ? 'bg-slate-900 text-gray-100' : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-teal-50 text-gray-900'}`}>
       
@@ -389,14 +330,13 @@ export default function DailyGoalTracker() {
         
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
           <div>
-            {/* 🛠️ FIX: Using "block" for mobile (new line) and "md:inline" for desktop (beside) */}
             <h1 className="text-2xl md:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
               GOAL LEDGER 
               <span className="block md:inline md:ml-2 text-lg md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
                 - A Daily Goal Tracker
               </span>
             </h1>
-            <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">Your personal AI-powered growth companion.</div>
+            <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">Your personal growth companion.</div>
           </div>
           
           <div className="flex flex-wrap items-center gap-2 md:gap-3 bg-white/50 dark:bg-slate-800/50 p-2 rounded-2xl border border-white/20 shadow-sm self-start md:self-auto w-full md:w-auto">
@@ -440,28 +380,12 @@ export default function DailyGoalTracker() {
           </div>
 
           <div className="flex gap-2 w-full md:w-auto overflow-x-auto md:overflow-visible pb-1 md:pb-0">
-             <button onClick={generateInsights} disabled={loadingInsight} className="flex-1 md:flex-none whitespace-nowrap px-4 md:px-5 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-medium rounded-xl shadow-lg shadow-purple-200 dark:shadow-none hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm md:text-base">
-                 {loadingInsight ? <span className="animate-spin">🌀</span> : '✨'} AI Insights
-             </button>
-             
              <button onClick={exportMonth} className="px-4 py-3 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-sm md:text-base">Export</button>
              <label className="px-4 py-3 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer whitespace-nowrap text-sm md:text-base">
                Import <input type="file" accept="application/json" className="hidden" onChange={e => e.target.files?.[0] && importMonth(e.target.files[0])} />
              </label>
           </div>
         </div>
-
-        <AnimatePresence>
-          {insight && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mb-6">
-              <div className="p-4 md:p-5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-100 dark:border-indigo-900 rounded-2xl flex gap-3 md:gap-4 relative shadow-inner">
-                <div className="text-2xl md:text-3xl">💡</div>
-                <div className="flex-1 text-indigo-900 dark:text-indigo-200 text-xs md:text-sm leading-relaxed font-medium">{insight}</div>
-                <button onClick={() => setInsight(null)} className="absolute top-2 right-2 md:top-3 md:right-3 text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-200">✕</button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <div className={`mb-6 p-3 md:p-4 rounded-2xl border border-gray-100 dark:border-slate-700 flex flex-wrap items-center gap-2 md:gap-3 transition-colors ${darkMode ? 'bg-slate-800/50' : 'bg-gray-50/50'}`}>
           <div className="text-xs md:text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-full md:w-auto">View Range</div>
