@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-// Imports from your other files (Make sure these exist as per previous steps)
+// Imports from other files
 import ThemeToggle from './components/ThemeToggle';
 import DayEventsEditor from './components/DayEventsEditor';
 import { 
@@ -12,13 +12,13 @@ import {
 import { 
   monthNames, daysInMonth, dateString, weekdayShort, 
   getStorageKey, loadInitialActivities, loadInitialEvents, 
-  dayBadgeColor, getGradientStyle 
+  dayBadgeColor, getGradientStyle, calculateGlobalStats 
 } from './utils/helpers';
 
 export default function DailyGoalTracker() {
   const today = new Date();
   
-  // --- STATE ---
+  // State
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [activities, setActivities] = useState(() => loadInitialActivities(today.getFullYear(), today.getMonth()));
@@ -69,6 +69,8 @@ export default function DailyGoalTracker() {
     const mt = daysInMonth(year, month);
     setDayFrom(1); setDayTo(mt); setPendingFrom('1'); setPendingTo(String(mt));
     setSelectedDay(null); 
+    
+    // Load activities (will inherit IDs from prev month if new month is empty)
     setActivities(loadInitialActivities(year, month));
     setEvents(loadInitialEvents(year, month));
     setIsDataLoaded(true);
@@ -130,7 +132,6 @@ export default function DailyGoalTracker() {
     setLastRemoved(null);
   }
 
-  // --- STRICT STREAK HELPER ---
   function isDayLocked(d) {
     const cellDate = new Date(year, month, d);
     cellDate.setHours(0, 0, 0, 0); // Normalize to midnight
@@ -152,7 +153,6 @@ export default function DailyGoalTracker() {
   }
 
   function toggleCheck(activityId, day) {
-    // 1. Logic Guard: Stop if locked
     if (isDayLocked(day)) return; 
 
     setActivities(prev => prev.map(act => {
@@ -160,11 +160,11 @@ export default function DailyGoalTracker() {
       
       const copy = { ...act.checks };
       const k = dateString(year, month, day);
-      const isChecking = !copy[k]; // Are we adding a check?
+      const isChecking = !copy[k]; 
       
       if (copy[k]) delete copy[k]; else copy[k] = true;
 
-      // --- CONFETTI LOGIC ---
+      // Confetti Logic
       if (isChecking) {
          const mt = daysInMonth(year, month);
          const start = Math.max(1, Math.min(dayFrom, mt));
@@ -191,7 +191,6 @@ export default function DailyGoalTracker() {
             });
          }
       }
-      // ---------------------
 
       return { ...act, checks: copy };
     }));
@@ -217,30 +216,6 @@ export default function DailyGoalTracker() {
     }
     const percent = totalDays <= 0 ? 0 : Math.round((checked / totalDays) * 100);
     return { checkedCount: checked, totalDays, percent };
-  }
-
-  function getCurrentStreak(act) {
-    const mt = daysInMonth(year, month);
-    let lastDay = Math.min(dayTo, mt);
-    if (year === today.getFullYear() && month === today.getMonth()) lastDay = Math.min(lastDay, today.getDate());
-    const startDay = Math.max(1, Math.min(dayFrom, mt));
-    let cur = 0;
-    for (let d = lastDay; d >= startDay; d--) {
-      if (act.checks[dateString(year, month, d)]) cur++; else break;
-    }
-    return cur;
-  }
-
-  function getMaxStreak(act) {
-    const mt = daysInMonth(year, month);
-    let maxS = 0;
-    let currentS = 0;
-    for (let d = 1; d <= mt; d++) {
-        if (act.checks[dateString(year, month, d)]) currentS++;
-        else { if (currentS > maxS) maxS = currentS; currentS = 0; }
-    }
-    if (currentS > maxS) maxS = currentS;
-    return maxS;
   }
 
   const monthTotal = daysInMonth(year, month);
@@ -329,7 +304,6 @@ export default function DailyGoalTracker() {
     <div className={`relative w-full min-h-screen p-2 md:p-8 transition-colors duration-500 ${darkMode ? 'bg-slate-900 text-gray-100' : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-teal-50 text-gray-900'}`}>
 
     <style>{`
-      /* Custom Scrollbar Styles */
       .custom-scrollbar::-webkit-scrollbar { height: 12px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { 
@@ -343,7 +317,6 @@ export default function DailyGoalTracker() {
       .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #64748b; }
     `}</style>
       
-      {/* MAIN CONTAINER */}
       <motion.div 
         variants={hoverCardVariants}
         initial="initial"
@@ -351,7 +324,6 @@ export default function DailyGoalTracker() {
         className={`relative max-w-7xl mx-auto backdrop-blur-xl rounded-2xl md:rounded-3xl border border-white/20 p-4 md:p-8 transition-colors duration-500 ${darkMode ? 'bg-slate-900/70' : 'bg-white/60'}`}
       >
         
-        {/* MOBILE TOGGLE */}
         <div className="absolute top-4 right-4 md:hidden z-50">
             <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
         </div>
@@ -493,8 +465,11 @@ export default function DailyGoalTracker() {
             <tbody>
               {activities.map((a, idx) => {
                 const { checkedCount, totalDays, percent } = getEfficiencyData(a);
-                const current = getCurrentStreak(a);
-                const maxS = getMaxStreak(a);
+                
+                // --- USE NEW GLOBAL STATS ---
+                const { current: currentStreak, max: maxStreak } = calculateGlobalStats(a, year, month);
+                // ----------------------------
+
                 const gradientBg = getGradientStyle(percent);
 
                 return (
@@ -517,8 +492,8 @@ export default function DailyGoalTracker() {
                       
                       <div className="flex flex-col items-start gap-1 mt-1 md:mt-2">
                         <div className="flex items-center gap-1">
-                          <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 font-medium flex items-center gap-1">🔥 {current}</div>
-                          <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium flex items-center gap-1">🏆 {maxS}</div>
+                          <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 font-medium flex items-center gap-1">🔥 {currentStreak}</div>
+                          <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium flex items-center gap-1">🏆 {maxStreak}</div>
                         </div>
                         <button onClick={() => removeActivity(a.id)} className="text-[10px] md:text-xs text-gray-400 hover:text-rose-500 transition-colors px-1 mt-0.5">Delete</button>
                       </div>
@@ -527,11 +502,10 @@ export default function DailyGoalTracker() {
                     {shownDays.map(d => {
                       const checked = !!a.checks[dateString(year, month, d)];
                       
-                      // --- STRICT STREAK UI LOGIC ---
+                      // STRICT STREAK UI LOGIC
                       const locked = isDayLocked(d); 
                       const isFuture = new Date(year, month, d) > new Date();
                       const isMissed = locked && !checked && !isFuture;
-                      // ------------------------------
 
                       return (
                         <td key={d} className={`p-0 border-b border-r border-gray-100 dark:border-slate-700 text-center group-hover:bg-gray-50 dark:group-hover:bg-slate-700 transition-colors ${selectedDay === d ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
@@ -540,7 +514,7 @@ export default function DailyGoalTracker() {
                             initial="initial"
                             whileHover={!locked ? "hover" : undefined}
                             whileTap={!locked ? "tap" : undefined}
-                            disabled={locked} // DISABLE CLICK IF LOCKED
+                            disabled={locked} 
                             onClick={() => toggleCheck(a.id, d)}
                             aria-pressed={checked}
                             aria-label={`${dateString(year, month, d)} — ${a.name} — ${checked ? 'completed' : 'not completed'}`}
@@ -554,8 +528,8 @@ export default function DailyGoalTracker() {
                                     checked 
                                       ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200 dark:shadow-none' 
                                       : isMissed 
-                                        ? 'bg-rose-50 border-2 border-rose-100 dark:bg-slate-800 dark:border-slate-700 opacity-50' // Missed day visual
-                                        : 'bg-gray-100 border-2 border-gray-200 dark:bg-slate-900 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500' // Future/Today
+                                        ? 'bg-rose-50 border-2 border-rose-100 dark:bg-slate-800 dark:border-slate-700 opacity-50'
+                                        : 'bg-gray-100 border-2 border-gray-200 dark:bg-slate-900 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500'
                                   }
                                 `}
                              >
@@ -574,7 +548,6 @@ export default function DailyGoalTracker() {
                                             </svg>
                                         </motion.span>
                                     ) : isMissed ? (
-                                      // Optional: Visual cue for missed
                                       <span className="text-rose-300 dark:text-slate-600 text-xs font-bold">−</span>
                                     ) : null}
                                  </AnimatePresence>
