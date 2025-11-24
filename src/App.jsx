@@ -1,6 +1,44 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// --- 1. FRAMER MOTION VARIANTS (Optimized) ---
+
+// Row/Card Hover: lifts up with a shadow
+const hoverCardVariants = {
+  initial: { scale: 1, y: 0, boxShadow: '0 0 0 rgba(0,0,0,0)', zIndex: 1 },
+  hover: {
+    scale: 1.01, // Kept subtle to avoid huge layout shifts
+    y: -4,
+    zIndex: 10,
+    boxShadow: '0 12px 30px rgba(16,24,40,0.12)',
+    transition: { type: 'spring', stiffness: 300, damping: 24 }
+  },
+  tap: { scale: 0.99, transition: { type: 'spring', stiffness: 500, damping: 30 } }
+};
+
+// Day Cell: Pop effect on hover/tap
+const hoverDayCell = {
+  initial: { scale: 1 },
+  hover: { scale: 1.15, transition: { type: 'spring', stiffness: 600, damping: 20 } },
+  tap: { scale: 0.9, transition: { type: 'spring', stiffness: 800, damping: 30 } }
+};
+
+// Progress Column: Independent lift
+const progressVariants = {
+  initial: { scale: 1 },
+  hover: { scale: 1.05, y: -2, transition: { type: 'spring', stiffness: 300, damping: 20 } }
+};
+
+// Checkmark Bounce: The "pop" when checked
+const checkmarkVariants = {
+  hidden: { scale: 0, opacity: 0 },
+  visible: { 
+    scale: 1, 
+    opacity: 1,
+    transition: { type: 'spring', stiffness: 500, damping: 25 }
+  }
+};
+
 // --- STORAGE HELPERS ---
 const getStorageKey = (type, year, month) => {
   const mKey = `${year}-${String(month + 1).padStart(2, '0')}`;
@@ -26,11 +64,9 @@ const loadInitialEvents = (year, month) => {
 export default function DailyGoalTracker() {
   const today = new Date();
   
-  // 1. Initialize Date State
+  // State
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
-
-  // 2. LAZY INITIALIZATION
   const [activities, setActivities] = useState(() => loadInitialActivities(today.getFullYear(), today.getMonth()));
   const [events, setEvents] = useState(() => loadInitialEvents(today.getFullYear(), today.getMonth()));
   
@@ -40,7 +76,7 @@ export default function DailyGoalTracker() {
   const [newActivityName, setNewActivityName] = useState('');
   const [lastRemoved, setLastRemoved] = useState(null);
 
-  // span inputs
+  // Span inputs
   const [pendingFrom, setPendingFrom] = useState('1');
   const [pendingTo, setPendingTo] = useState('1');
   const [dayFrom, setDayFrom] = useState(1);
@@ -60,14 +96,10 @@ export default function DailyGoalTracker() {
   const weekdayShort = (y,m,d) => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(y,m,d).getDay()];
 
   // --- EFFECTS ---
-
-  // Favicon Injection
   useEffect(() => {
     document.title = "Goal Ledger";
     const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-    link.type = 'image/svg+xml';
-    link.rel = 'icon';
-    link.href = '/favicon.svg';
+    link.type = 'image/svg+xml'; link.rel = 'icon'; link.href = '/favicon.svg';
     document.getElementsByTagName('head')[0].appendChild(link);
   }, []);
 
@@ -85,11 +117,9 @@ export default function DailyGoalTracker() {
       setDayFrom(1); setDayTo(mt); setPendingFrom('1'); setPendingTo(String(mt));
       return;
     }
-
     const mt = daysInMonth(year, month);
     setDayFrom(1); setDayTo(mt); setPendingFrom('1'); setPendingTo(String(mt));
     setSelectedDay(null); 
-
     setActivities(loadInitialActivities(year, month));
     setEvents(loadInitialEvents(year, month));
     setIsDataLoaded(true);
@@ -120,7 +150,6 @@ export default function DailyGoalTracker() {
   }, [month, year]);
 
   // --- LOGIC ---
-
   function id() { return Math.random().toString(36).slice(2,9); }
 
   function addActivity() {
@@ -181,18 +210,13 @@ export default function DailyGoalTracker() {
     if (year === today.getFullYear() && month === today.getMonth()) {
       effectiveEnd = Math.min(e, today.getDate());
     }
-
-    if (s > effectiveEnd) {
-       return { checkedCount: 0, totalDays: 0, percent: 0 };
-    }
+    if (s > effectiveEnd) return { checkedCount: 0, totalDays: 0, percent: 0 };
 
     const totalDays = effectiveEnd - s + 1;
-    
     let checked = 0;
     for (let d = s; d <= effectiveEnd; d++) {
       if (act.checks[dateString(year, month, d)]) checked++;
     }
-    
     const percent = totalDays <= 0 ? 0 : Math.round((checked / totalDays) * 100);
     return { checkedCount: checked, totalDays, percent };
   }
@@ -214,12 +238,8 @@ export default function DailyGoalTracker() {
     let maxS = 0;
     let currentS = 0;
     for (let d = 1; d <= mt; d++) {
-        if (act.checks[dateString(year, month, d)]) {
-            currentS++;
-        } else {
-            if (currentS > maxS) maxS = currentS;
-            currentS = 0;
-        }
+        if (act.checks[dateString(year, month, d)]) currentS++;
+        else { if (currentS > maxS) maxS = currentS; currentS = 0; }
     }
     if (currentS > maxS) maxS = currentS;
     return maxS;
@@ -268,17 +288,11 @@ export default function DailyGoalTracker() {
     const d = td.getDate();
     const m = td.getMonth();
     const y = td.getFullYear();
-
-    if (year !== y || month !== m) {
-      setYear(y); setMonth(m);
-    }
-    
+    if (year !== y || month !== m) { setYear(y); setMonth(m); }
     const mt = daysInMonth(y, m);
     setDayFrom(1); setDayTo(mt); setPendingFrom('1'); setPendingTo(String(mt));
-    
     setSelectedDay(d);
     setTimeout(() => setSelectedDay(null), 2000); 
-
     setTimeout(() => {
         if(scrollRef.current) {
             const container = scrollRef.current;
@@ -324,52 +338,50 @@ export default function DailyGoalTracker() {
     reader.readAsText(file);
   }
 
-  // --- REUSABLE THEME TOGGLE COMPONENT ---
+  // --- THEME TOGGLE (Accessible & Animated) ---
   const ThemeToggle = ({ className = "" }) => (
-    <div 
+    <motion.button 
+        whileHover={{ scale: 1.08, rotate: 5 }} 
+        whileTap={{ scale: 0.95, rotate: 0 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         onClick={() => setDarkMode(!darkMode)} 
-        className={`w-12 h-7 md:w-14 md:h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${darkMode ? 'bg-slate-700 justify-end' : 'bg-indigo-200 justify-start'} ${className}`} 
+        className={`w-12 h-7 md:w-14 md:h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-900 ${darkMode ? 'bg-slate-700 justify-end' : 'bg-indigo-200 justify-start'} ${className}`} 
         title="Toggle Theme"
+        aria-label={`Switch to ${darkMode ? 'light' : 'dark'} mode`}
     >
         <motion.div layout className="bg-white w-5 h-5 md:w-6 md:h-6 rounded-full shadow-md flex items-center justify-center text-xs select-none">
-        {darkMode ? '🌙' : '☀️'}
+          {darkMode ? '🌙' : '☀️'}
         </motion.div>
-    </div>
+    </motion.button>
   );
 
   return (
     <div className={`relative w-full min-h-screen p-2 md:p-8 transition-colors duration-500 ${darkMode ? 'bg-slate-900 text-gray-100' : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-teal-50 text-gray-900'}`}>
 
-      {/* 👇 ADD THIS STYLE BLOCK HERE 👇 */}
     <style>{`
-      /* Light Mode Scrollbar */
+      /* Custom Scrollbar Styles */
       .custom-scrollbar::-webkit-scrollbar { height: 12px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { 
-        background-color: #cbd5e1; /* Gray-300 */
+        background-color: #cbd5e1; 
         border-radius: 20px; 
         border: 3px solid transparent; 
         background-clip: content-box; 
       }
-      
-      /* Dark Mode Scrollbar */
-      .dark .custom-scrollbar::-webkit-scrollbar-track { 
-        background-color: #1e293b; /* Matches bg-slate-800 */
-        border-bottom-left-radius: 1rem; /* Optional: rounds the corner */
-        border-bottom-right-radius: 1rem;
-      }
-      .dark .custom-scrollbar::-webkit-scrollbar-thumb { 
-        background-color: #475569; /* Slate-600 (visible but subtle) */
-        border: 3px solid #1e293b; /* Creates padding effect */
-      }
-      .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
-        background-color: #64748b; /* Slate-500 on hover */
-      }
+      .dark .custom-scrollbar::-webkit-scrollbar-track { background-color: #1e293b; border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem;}
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; border: 3px solid #1e293b; }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #64748b; }
     `}</style>
       
-      <div className={`relative max-w-7xl mx-auto backdrop-blur-xl rounded-2xl md:rounded-3xl shadow-2xl border border-white/20 p-4 md:p-8 transition-colors duration-500 ${darkMode ? 'bg-slate-900/70 shadow-black/50' : 'bg-white/60 shadow-indigo-100/50'}`}>
+      {/* MAIN CONTAINER WITH HOVER LIFT */}
+      <motion.div 
+        variants={hoverCardVariants}
+        initial="initial"
+        whileHover="hover"
+        className={`relative max-w-7xl mx-auto backdrop-blur-xl rounded-2xl md:rounded-3xl border border-white/20 p-4 md:p-8 transition-colors duration-500 ${darkMode ? 'bg-slate-900/70' : 'bg-white/60'}`}
+      >
         
-        {/* MOBILE TOGGLE (Visible only on small screens, Absolute Top Right) */}
+        {/* MOBILE TOGGLE */}
         <div className="absolute top-4 right-4 md:hidden z-50">
             <ThemeToggle />
         </div>
@@ -401,9 +413,19 @@ export default function DailyGoalTracker() {
               className="w-16 md:w-20 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 text-center text-gray-700 dark:text-gray-200 font-medium rounded-lg shadow-sm px-1 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm" 
             />
 
-            <button onClick={goToTodayAndHighlight} className="px-3 py-1.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-xl text-xs md:text-sm font-semibold hover:bg-indigo-200 transition-colors">Today</button>
+            {/* TODAY BUTTON WITH POP */}
+            <motion.button 
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                onClick={goToTodayAndHighlight} 
+                aria-label="Go to today"
+                className="px-3 py-1.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-xl text-xs md:text-sm font-semibold hover:bg-indigo-200 transition-colors"
+            >
+                Today
+            </motion.button>
             
-            {/* DESKTOP TOGGLE (Hidden on mobile, Visible on MD+) */}
+            {/* DESKTOP TOGGLE */}
             <div className="hidden md:flex">
                 <ThemeToggle />
             </div>
@@ -411,6 +433,7 @@ export default function DailyGoalTracker() {
           </div>
         </div>
 
+        {/* INPUT AREA */}
         <div className="mb-6 flex flex-col md:flex-row gap-3">
           <div className="flex-1 w-full relative group">
             <input 
@@ -433,6 +456,7 @@ export default function DailyGoalTracker() {
           </div>
         </div>
 
+        {/* RANGE CONTROLS */}
         <div className={`mb-6 p-3 md:p-4 rounded-2xl border border-gray-100 dark:border-slate-700 flex flex-wrap items-center gap-2 md:gap-3 transition-colors ${darkMode ? 'bg-slate-800/50' : 'bg-gray-50/50'}`}>
           <div className="text-xs md:text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-full md:w-auto">View Range</div>
           <div className="flex items-center gap-2">
@@ -443,10 +467,7 @@ export default function DailyGoalTracker() {
           <button disabled={!canApply} onClick={applySpan} className={`px-3 md:px-4 py-1.5 rounded-lg font-medium text-xs md:text-sm transition-all ${canApply ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-gray-200 text-gray-400 dark:bg-slate-700 dark:text-slate-500'}`}>Set</button>
           <button 
             onClick={() => { 
-              setDayFrom(1); 
-              setDayTo(daysInMonth(year, month)); 
-              setPendingFrom('1'); 
-              setPendingTo(String(daysInMonth(year, month))); 
+              setDayFrom(1); setDayTo(daysInMonth(year, month)); setPendingFrom('1'); setPendingTo(String(daysInMonth(year, month))); 
             }} 
             className="px-3 py-1.5 text-xs md:text-sm text-gray-500 bg-blue-50 border border-blue-200 rounded-md hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
@@ -455,6 +476,7 @@ export default function DailyGoalTracker() {
           <div className="w-full md:w-auto text-xs font-medium text-rose-500">{spanError}</div>
         </div>
 
+        {/* MAIN TABLE */}
         <div ref={scrollRef} className="custom-scrollbar overflow-x-auto rounded-2xl border border-gray-100 dark:border-slate-700/50 shadow-sm bg-white dark:bg-slate-800 relative">
           <table className="w-full border-collapse">
             <thead>
@@ -472,6 +494,10 @@ export default function DailyGoalTracker() {
                     <motion.th 
                       key={d} 
                       id={`day-header-${d}`} 
+                      variants={hoverDayCell}
+                      initial="initial"
+                      whileHover="hover"
+                      whileTap="tap"
                       onClick={() => setSelectedDay(prev => prev === d ? null : d)} 
                       className="p-1 md:p-2 border-b border-r border-gray-100 dark:border-slate-700 min-w-[56px] md:min-w-[64px] cursor-pointer group"
                     >
@@ -503,65 +529,106 @@ export default function DailyGoalTracker() {
                 const maxS = getMaxStreak(a);
 
                 return (
-                  <tr key={a.id} className="group">
-                    <td className="hidden md:table-cell p-4 border-b border-r border-gray-100 dark:border-slate-700 font-medium text-gray-400 text-center sticky left-0 z-20 shadow-sm transition-colors bg-gray-50 dark:bg-slate-900 group-hover:bg-gray-100 dark:group-hover:bg-black">
+                  // ACTIVITY ROW with variants & focus management
+                  <motion.tr 
+                    key={a.id} 
+                    className="group bg-white dark:bg-slate-800"
+                    variants={hoverCardVariants}
+                    initial="initial"
+                    whileHover="hover"
+                    whileTap="tap"
+                    role="group"
+                    tabIndex={0} // Allows keyboard users to focus on the row context
+                  >
+                    <td className="hidden md:table-cell p-4 border-b border-r border-gray-100 dark:border-slate-700 font-medium text-gray-400 text-center sticky left-0 z-20 group-hover:z-50 shadow-sm transition-colors bg-gray-50 dark:bg-slate-900 group-hover:bg-gray-100 dark:group-hover:bg-black">
                       {idx + 1}
                     </td>
                     
-                    <td className="p-2 md:p-4 border-b border-r border-gray-100 dark:border-slate-700 sticky left-0 md:left-16 z-20 shadow-sm transition-colors align-top bg-gray-50 dark:bg-slate-900 group-hover:bg-gray-100 dark:group-hover:bg-black">
-                      <div className="font-bold text-gray-800 dark:text-gray-100 text-sm md:text-lg break-words max-w-[110px] md:max-w-none">{a.name}</div>
-                      
-                      <div className="flex flex-col items-start gap-1 mt-1 md:mt-2">
-                        
-                        <div className="flex items-center gap-1">
-                          <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 font-medium flex items-center gap-1">
-                            🔥 {current}
-                          </div>
-                          <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium flex items-center gap-1">
-                            🏆 {maxS}
-                          </div>
-                        </div>
+                    <td className="p-2 md:p-4 border-b border-r border-gray-100 dark:border-slate-700 sticky left-0 md:left-16 z-20 group-hover:z-50 shadow-sm transition-colors align-top bg-gray-50 dark:bg-slate-900 group-hover:bg-gray-100 dark:group-hover:bg-black">
+  <div className="font-bold text-gray-800 dark:text-gray-100 text-sm md:text-lg break-words max-w-[110px] md:max-w-none">{a.name}</div>
+  
+  <div className="flex flex-col items-start gap-1 mt-1 md:mt-2">
+    
+    <div className="flex items-center gap-1">
+      <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 font-medium flex items-center gap-1">
+        🔥 {current}
+      </div>
+      <div className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium flex items-center gap-1">
+        🏆 {maxS}
+      </div>
+    </div>
 
-                        <button onClick={() => removeActivity(a.id)} className="text-[10px] md:text-xs text-gray-400 hover:text-rose-500 transition-colors px-1 mt-0.5">Delete</button>
-                      </div>
-                    </td>
+    <button onClick={() => removeActivity(a.id)} className="text-[10px] md:text-xs text-gray-400 hover:text-rose-500 transition-colors px-1 mt-0.5">Delete</button>
+  </div>
+</td>
 
                     {shownDays.map(d => {
                       const checked = !!a.checks[dateString(year, month, d)];
                       const future = isFutureDay(d);
                       return (
                         <td key={d} className={`p-1 md:p-2 border-b border-r border-gray-100 dark:border-slate-700 text-center group-hover:bg-gray-50 dark:group-hover:bg-slate-700 transition-colors ${selectedDay === d ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
+                          
+                          {/* DAY CELL BUTTON */}
                           <motion.button 
-                            whileTap={{ scale: 0.8 }} 
+                            variants={hoverDayCell}
+                            initial="initial"
+                            whileHover="hover"
+                            whileTap="tap"
                             disabled={future}
                             onClick={() => toggleCheck(a.id, d)}
+                            aria-pressed={checked}
+                            aria-label={`${dateString(year, month, d)} — ${a.name} — ${checked ? 'completed' : 'not completed'}`}
                             className={`w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center transition-all duration-300 mx-auto ${future ? 'opacity-20 cursor-not-allowed bg-gray-100 dark:bg-slate-800' : checked ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200 dark:shadow-none' : 'bg-gray-100 border-2 border-gray-200 dark:bg-slate-900 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500'}`}
                           >
-                            {checked && <motion.svg initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></motion.svg>}
+                             <AnimatePresence mode="wait">
+                                {checked && (
+                                    // CHECKMARK BOUNCE
+                                    <motion.span
+                                        key="check"
+                                        variants={checkmarkVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="hidden"
+                                        className="flex items-center justify-center"
+                                    >
+                                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </motion.span>
+                                )}
+                             </AnimatePresence>
                           </motion.button>
                         </td>
                       );
                     })}
                     
                     <td className="p-2 md:p-4 border-b border-l border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 group-hover:bg-gray-100 dark:group-hover:bg-black transition-colors sticky right-0 z-20">
-                      <div className="text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 text-right mb-1">
-                        {checkedCount}/{totalDays}
-                      </div>
+                      {/* PROGRESS COLUMN ANIMATION */}
+                      <motion.div
+                        className="progress-card rounded-md p-2"
+                        variants={progressVariants}
+                        initial="initial"
+                        whileHover="hover"
+                      >
+                          <div className="text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 text-right mb-1">
+                            {checkedCount}/{totalDays}
+                          </div>
 
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className="flex-1 h-2 md:h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }} 
-                            animate={{ width: `${percent}%` }} 
-                            transition={{ duration: 1, ease: "circOut" }}
-                            style={{ backgroundColor: percentColor(percent) }} 
-                            className="h-full rounded-full" 
-                          />
-                        </div>
-                        <div className="text-xs md:text-base font-extrabold w-8 md:w-12 text-right text-gray-800 dark:text-gray-100">{percent}%</div>
-                      </div>
+                          <div className="flex items-center gap-2 md:gap-3">
+                            <div className="flex-1 h-2 md:h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }} 
+                                animate={{ width: `${percent}%` }} 
+                                transition={{ duration: 1, ease: "circOut" }}
+                                style={{ backgroundColor: percentColor(percent) }} 
+                                className="h-full rounded-full" 
+                              />
+                            </div>
+                            <div className="text-xs md:text-base font-extrabold w-8 md:w-12 text-right text-gray-800 dark:text-gray-100">{percent}%</div>
+                          </div>
+                      </motion.div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
               {activities.length === 0 && (
@@ -593,7 +660,6 @@ export default function DailyGoalTracker() {
           )}
         </AnimatePresence>
         
-        {/* --- PREMIUM FOOTER (Placed after AnimatePresence to be pushed down) --- */}
         <div className="mt-8 pt-6 border-t border-gray-200 dark:border-slate-700 text-center">
             <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                 Developed by <span className="text-indigo-600 dark:text-indigo-400">PRABHU SINGH</span>
@@ -610,7 +676,7 @@ export default function DailyGoalTracker() {
           </motion.div>
         )}
 
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -677,8 +743,6 @@ function DayEventsEditor({ dateKey, day, events = [], onAdd, onUpdate, onRemove,
           }
 
           return (
-
-            
             <div key={ev.id} className={`flex items-center justify-between p-2 rounded-md border ${bgClass}`}>
               <div className="overflow-hidden mr-2">
                 <div className="font-medium text-gray-900 dark:text-white text-sm truncate">{ev.title}</div>
