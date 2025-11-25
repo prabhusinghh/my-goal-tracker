@@ -162,7 +162,7 @@ export const getGradientStyle = (p) => {
 
 // ... existing imports and functions ...
 
-// --- NEW: Aggregate All History ---
+// --- NEW: Aggregate All History (EVENTS ONLY) ---
 export const getAllEventsHistory = () => {
   const allEvents = [];
 
@@ -172,19 +172,21 @@ export const getAllEventsHistory = () => {
     if (key.startsWith('daily-goals-events-')) {
       try {
         const raw = localStorage.getItem(key);
-        const data = JSON.parse(raw); // This is an object: { "2024-11-24": [...], "2024-11-25": [...] }
+        const data = JSON.parse(raw); 
 
         if (data) {
           // Iterate over every date in this month's file
           Object.entries(data).forEach(([dateStr, eventsList]) => {
             if (Array.isArray(eventsList)) {
               eventsList.forEach(ev => {
-                // Push into our master list
-                allEvents.push({
-                  ...ev,
-                  date: dateStr, // Keep track of the date
-                  storageKey: key // Keep track of which file it came from
-                });
+                // FILTER: Only add if it has NO start time (meaning it's an Event/Note)
+                if (!ev.fromTime) { 
+                  allEvents.push({
+                    ...ev,
+                    date: dateStr, 
+                    storageKey: key 
+                  });
+                }
               });
             }
           });
