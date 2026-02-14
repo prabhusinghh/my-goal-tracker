@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { signInWithRedirect, getRedirectResult, signOut } from "firebase/auth";
+import { auth, provider } from "./services/firebase";
+import { useAuth } from "./hooks/useAuth";
+
 
 // Imports from other files
 import ThemeToggle from './components/ThemeToggle';
@@ -17,6 +21,15 @@ import {
 } from './utils/helpers';
 
 export default function DailyGoalTracker() {
+
+  const { user, loading } = useAuth();
+  useEffect(() => {
+  getRedirectResult(auth).catch((error) => {
+    console.error("Redirect login error:", error);
+  });
+}, []);
+
+
   const today = new Date();
   
   // --- STATE ---
@@ -309,6 +322,28 @@ export default function DailyGoalTracker() {
       } catch (err) { alert('Failed to import'); }
     };
     reader.readAsText(file);
+  }
+  // 🔐 AUTH GUARD
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-black text-white">
+        <button
+          onClick={() => signInWithRedirect(auth, provider)}
+          className="px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-700 transition"
+        >
+          Sign in with Google
+        </button>
+      </div>
+    );
   }
 
   return (
