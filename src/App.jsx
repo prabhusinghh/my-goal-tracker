@@ -23,11 +23,11 @@ import {
 export default function DailyGoalTracker() {
 
   const { user, loading } = useAuth();
-  useEffect(() => {
-  getRedirectResult(auth).catch((error) => {
-    console.error("Redirect login error:", error);
-  });
-}, []);
+//   useEffect(() => {
+  // getRedirectResult(auth).catch((error) => {
+//     console.error("Redirect login error:", error);
+//   });
+// }, []);
 
 
   const today = new Date();
