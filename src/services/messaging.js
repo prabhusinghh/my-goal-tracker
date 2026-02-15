@@ -23,8 +23,13 @@ export async function requestNotificationPermission(vapidKey) {
       return null;
     }
 
+    const registration = await navigator.serviceWorker.register(
+      "/firebase-messaging-sw.js"
+    );
+
     const token = await getToken(messaging, {
       vapidKey: vapidKey,
+      serviceWorkerRegistration: registration,
     });
 
     if (token) {
@@ -39,6 +44,7 @@ export async function requestNotificationPermission(vapidKey) {
     return null;
   }
 }
+
 
 // 🔥 Foreground message listener
 export function listenForMessages() {
