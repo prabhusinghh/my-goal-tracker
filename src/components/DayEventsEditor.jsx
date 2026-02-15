@@ -70,6 +70,8 @@ export default function DayEventsEditor({ dateKey, events = [], onAdd, onUpdate,
   const [toTime, setToTime] = useState('10:00');
   const [type, setType] = useState('Work');
   const [priority, setPriority] = useState('Normal');
+  const [notifyBefore, setNotifyBefore] = useState(5);
+
 
   // --- NEW: CALCULATE IF DAY IS PAST ---
   const today = new Date();
@@ -112,12 +114,14 @@ export default function DayEventsEditor({ dateKey, events = [], onAdd, onUpdate,
     }
 
     const newEvent = {
-      title: t,
-      type,
-      priority,
-      isCompleted: false, 
-      fromTime: activeTab === 'schedule' ? fromTime : null,
-      toTime: activeTab === 'schedule' ? toTime : null,
+       title: t,
+  type,
+  priority,
+  isCompleted: false,
+  fromTime: activeTab === 'schedule' ? fromTime : null,
+  toTime: activeTab === 'schedule' ? toTime : null,
+  notifyBefore: activeTab === 'schedule' ? notifyBefore : null,
+  reminderScheduled: false
     };
 
     onAdd && onAdd(newEvent);
@@ -189,11 +193,32 @@ export default function DayEventsEditor({ dateKey, events = [], onAdd, onUpdate,
           ) : (
             <form onSubmit={handleAdd} className="flex flex-col gap-4">
               {activeTab === 'schedule' && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-3">
-                  <TimePicker label="Start" value={fromTime} onChange={setFromTime} />
-                  <TimePicker label="End" value={toTime} onChange={setToTime} />
-                </motion.div>
-              )}
+  <>
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      className="grid grid-cols-2 gap-3"
+    >
+      <TimePicker label="Start" value={fromTime} onChange={setFromTime} />
+      <TimePicker label="End" value={toTime} onChange={setToTime} />
+    </motion.div>
+
+    <div>
+      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">
+        Notify Before (minutes)
+      </label>
+      <input
+        type="number"
+        min="1"
+        max="120"
+        value={notifyBefore}
+        onChange={(e) => setNotifyBefore(Number(e.target.value))}
+        className="w-full p-2.5 text-sm rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none dark:text-white transition-all"
+      />
+    </div>
+  </>
+)}
+
 
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">{activeTab === 'schedule' ? 'Task Name' : 'Event Title'}</label>

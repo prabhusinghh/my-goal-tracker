@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { requestNotificationPermission, listenForMessages } from "./services/messaging";
+
+import { scheduleReminders, scheduleMorningEventSummary } from "./services/reminderScheduler";
 
 
 
@@ -55,12 +58,40 @@ export default function DailyGoalTracker() {
   });
 
   // --- EFFECTS ---
+
+  
   useEffect(() => {
     document.title = "Goal Ledger";
     const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
     link.type = 'image/svg+xml'; link.rel = 'icon'; link.href = '/favicon.svg';
     document.getElementsByTagName('head')[0].appendChild(link);
   }, []);
+
+  useEffect(() => {
+  const vapidKey = "BIMUN_RgtX9XbMqvhU_9sNyyxo-zmotldU5F0COlkvyrL82oB8EqXo5S-DyYfm4cAj852aEO7dAqrRoox6rGoP4";
+
+  requestNotificationPermission(vapidKey).then((token) => {
+    if (token) {
+      console.log("Device registered for push.");
+      // Later we will save this token in Firestore
+    }
+  });
+
+  listenForMessages();
+}, []);
+useEffect(() => {
+  const today = new Date();
+  const key = dateString(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayEvents = events[key] || [];
+
+  
+  scheduleReminders(key, todayEvents);
+scheduleMorningEventSummary(key, todayEvents);
+
+}, [events]);
+
+
+
 
   useEffect(() => {
     try { localStorage.setItem('dg-dark-mode', darkMode ? '1' : '0'); } catch (e) {}
@@ -135,6 +166,7 @@ export default function DailyGoalTracker() {
     window.addEventListener('resize', update);
     return () => { el.removeEventListener('scroll', update); window.removeEventListener('resize', update); };
   }, [month, year]);
+  
 
   // --- LOGIC ---
   function id() { return Math.random().toString(36).slice(2,9); }
