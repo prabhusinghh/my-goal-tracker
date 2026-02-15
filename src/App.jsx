@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { signInWithRedirect, getRedirectResult, signOut } from "firebase/auth";
-import { auth, provider } from "./services/firebase";
-import { useAuth } from "./hooks/useAuth";
+
 
 
 // Imports from other files
@@ -22,12 +20,7 @@ import {
 
 export default function DailyGoalTracker() {
 
-  const { user, loading } = useAuth();
-//   useEffect(() => {
-  // getRedirectResult(auth).catch((error) => {
-//     console.error("Redirect login error:", error);
-//   });
-// }, []);
+  
 
 
   const today = new Date();
@@ -323,28 +316,7 @@ export default function DailyGoalTracker() {
     };
     reader.readAsText(file);
   }
-  // 🔐 AUTH GUARD
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-lg">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-black text-white">
-        <button
-          onClick={() => signInWithRedirect(auth, provider)}
-          className="px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-700 transition"
-        >
-          Sign in with Google
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className={`relative w-full min-h-screen p-2 md:p-8 transition-colors duration-500 ${darkMode ? 'bg-slate-900 text-gray-100' : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-teal-50 text-gray-900'}`}>
